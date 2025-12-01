@@ -1,0 +1,96 @@
+# Training Configuration for NP-SNN Orbital Mechanics Model
+# Follows implementation plan for production-grade system
+
+# Model Architecture
+model:
+  hidden_size: 256
+  num_layers: 3
+  dropout: 0.1
+
+# Dataset Configuration  
+dataset:
+  n_objects_train: 1000
+  n_objects_val: 200
+  n_trajectories_train: 10000
+  n_trajectories_val: 2000
+  dt_minutes: 5.0
+
+# Curriculum Learning Configuration
+curriculum:
+  total_epochs: 200
+  sanity_epochs: 5
+  supervised_epochs: 50
+  mixed_epochs: 80
+  physics_epochs: 50
+  fine_tune_epochs: 15
+  
+  stage_configs:
+    sanity:
+      w_state_supervised: 1.0
+      w_dynamics: 0.0
+    supervised:
+      w_state_supervised: 1.0
+      w_dynamics: 0.0
+    mixed:
+      w_state_supervised: 0.5
+      w_dynamics: 0.5
+    physics:
+      w_state_supervised: 0.1
+      w_dynamics: 5.0
+    fine_tune:
+      w_state_supervised: 0.1
+      w_dynamics: 2.0
+  
+  early_stopping_patience: 15
+  early_stopping_min_delta: 0.0001
+  
+  # Dynamic scheduling
+  supervised_decay_schedule: "exponential"
+  supervised_decay_rate: 2.0
+  dynamics_growth_schedule: "linear"
+  dynamics_growth_rate: 1.0
+  
+  # Data complexity progression
+  start_horizon_hours: 2.0
+  end_horizon_hours: 24.0
+  start_noise_level: 0.0001
+  end_noise_level: 0.01
+  
+  # Collocation points for physics loss
+  collocation_points_per_gap: 3
+  max_collocation_points: 50
+
+# Optimization Configuration
+optimization:
+  learning_rate: 0.001
+  weight_decay: 0.0001
+  optimizer_type: "adamw"
+  lr_scheduler: "cosine"
+  gradient_clip_norm: 1.0
+
+# Data Loading Configuration
+data:
+  batch_size: 32
+  val_batch_size: 64
+  num_workers: 4
+
+# Experiment Tracking
+experiment:
+  experiment_name: "npsnn_orbital_mechanics"
+  checkpoint_dir: "checkpoints"
+  checkpoint_frequency: 10
+  tracking_uri: null
+  log_frequency: 1
+
+# Physics Loss Configuration
+physics:
+  adaptive_weights: true
+  weight_update_frequency: 10
+  reference_loss_window: 50
+
+# General Settings
+random_seed: 42
+mixed_precision: false
+compile_model: false
+device: "auto"
+distributed_training: false

@@ -1,0 +1,177 @@
+# ============================================================
+# SPACE DEBRIS SIMULATION CONFIGURATION (YAML)
+# Realistic physical, orbital, sensor, and environmental
+# parameter ranges for dataset generation
+# ============================================================
+
+general:
+  description: "Realistic debris simulation parameters for NP-SNN training"
+  version: "1.0"
+
+# ------------------------------------------------------------
+# ORBITAL / PROPAGATION PARAMETERS
+# ------------------------------------------------------------
+orbital_parameters:
+  altitude_km:
+    range: [160, 2000]            # LEO domain
+    recommended_samples: [300, 500, 800, 1200]
+
+  eccentricity:
+    typical_range: [0.0, 0.05]
+    classes:
+      circular: [0.0, 0.01]
+      moderate: [0.01, 0.2]
+
+  inclination_deg:
+    recommended_samples: [10, 53, 57, 98, 137]
+
+  perturbations:
+    include_J2: true
+    include_J3: false
+    include_J4: false
+    include_SRP: true             # recommended for objects >1000 km or GEO
+
+  integrator:
+    timestep_seconds: 10
+    high_fidelity_timestep_seconds: 1
+    mode: "numerical"             # vs "sgp4"
+
+
+# ------------------------------------------------------------
+# OBJECT PHYSICAL PROPERTIES
+# ------------------------------------------------------------
+object_properties:
+  size_m:
+    bins:
+      small_fragments: [0.001, 0.1]
+      medium_fragments: [0.1, 1.0]
+      large_structures: [1.0, 5.0]
+  
+  area_to_mass_ratio_m2_per_kg:
+    classes:
+      LAMR: [0.005, 0.2]
+      typical: [0.2, 1.0]
+      HAMR: [1.0, 20.0]
+    sampling: "log_uniform"
+
+  drag_coefficient_Cd:
+    recommended_range: [2.0, 2.5]
+
+  ballistic_coefficient_B:
+    approximate_range_m2_per_kg: [0.05, 2.0]
+    derive_from_Cd_and_AMR: true
+
+  reflectivity_albedo:
+    range: [0.1, 0.3]
+
+  srp_coefficient:
+    typical: 1.2
+
+
+# ------------------------------------------------------------
+# SENSOR MODELS
+# ------------------------------------------------------------
+sensor_models:
+  optical:
+    astrometric_noise_arcsec:
+      high_precision: [0.03, 0.3]
+      typical_precision: [0.3, 1.0]
+      low_precision: [1.0, 3.0]
+    exposure_seconds:
+      typical_range: [1, 10]
+      deep_range: [30, 150]
+    pixel_scale_arcsec_per_px: [0.3, 1.0]
+    dropout_probability: 0.1
+
+  radar:
+    range_noise_m: [10, 100]
+    range_rate_noise_km_per_s: [0.001, 0.05]
+    angular_noise_deg: [0.01, 0.2]
+    revisit_minutes: [5, 30]
+    tracklet_duration_seconds: [30, 300]
+
+
+# ------------------------------------------------------------
+# ENVIRONMENTAL AND SPACE WEATHER INPUTS
+# ------------------------------------------------------------
+environment:
+  atmospheric_model: "NRLMSISE-00"
+  
+  solar_flux_F10_7_sfu:
+    samples: [70, 100, 150, 200]          # quiet → active
+  
+  geomagnetic_index_Ap:
+    samples: [5, 15, 50]                  # quiet → storm
+  
+  include_solar_cycle_randomization: true
+
+
+# ------------------------------------------------------------
+# SIMULATION SETTINGS
+# ------------------------------------------------------------
+simulation:
+  horizon_hours:
+    short: 1
+    medium: 24
+    long: 168   # 7 days
+
+  collocation_step_s: 20
+  num_objects:
+    development: 50
+    medium: 200
+    large_scale: 1000
+
+
+# ------------------------------------------------------------
+# SCENARIO PRESETS
+# ------------------------------------------------------------
+scenarios:
+
+  baseline_leo:
+    description: "Baseline LEO optical+radar survey scenario"
+    altitude_km: [300, 500, 800, 1200]
+    eccentricity: [0.0, 0.01]
+    inclination_deg: [53, 98]
+    AMR_range: [0.01, 1.0]
+    drag_model:
+      Cd: 2.2
+      F10_7: 100
+      Ap: 5
+    optical_noise_arcsec: 0.5
+    radar_range_noise_m: 30
+    radar_range_rate_noise_km_s: 0.01
+    horizon_hours: 24
+    timestep_seconds: 10
+
+  geo_survey:
+    description: "GEO optical tracking with SRP"
+    altitude_km: 35786
+    eccentricity: [0.0, 0.01]
+    include_SRP: true
+    AMR_range: [0.01, 0.2]
+    optical_noise_arcsec: 0.2
+    exposure_seconds: [30, 120]
+    timestep_seconds: 60
+    horizon_hours: 168
+
+  small_telescope_noisy:
+    description: "Low-quality optical sensor with high noise and dropouts"
+    altitude_km: [500, 1000]
+    AMR_range: [0.05, 2.0]
+    optical_noise_arcsec: [2.0, 3.0]
+    dropout_probability: 0.3
+    exposure_seconds: 30
+    horizon_hours: 24
+    timestep_seconds: 10
+
+  fragmentation_event:
+    description: "High-density fragmentation cloud stress test"
+    fragmentation_altitude_km: 700
+    fragment_count: [50, 500]
+    size_range_m: [0.01, 0.5]
+    AMR_range: [0.01, 10.0]
+    high_fidelity_timestep_seconds: 1
+    initial_dense_observations_hours: 12
+    radar_range_noise_m: 50
+    optical_noise_arcsec: 1.0
+    horizon_hours: 72
