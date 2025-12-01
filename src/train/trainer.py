@@ -624,7 +624,7 @@ class NPSNNTrainer:
             'total_epochs': self.current_epoch,
             'best_val_loss': self.best_val_loss,
             'final_stage': self.curriculum_scheduler.current_stage.value,
-            'model_parameters': self.model.count_parameters(),
+            'model_parameters': sum(p.numel() for p in self.model.parameters()),
             'run_id': self.run_id,
             'training_history': self.training_history
         }

@@ -1,24 +1,5 @@
 # **2. Background & Literature Review — 2.5 pages**
 
-## 2.1 Space Situational Awareness Essentials
-
-* Orbital regimes: LEO, GEO, MEO, Molniya, fragmentation clouds.
-* Sensors: optical, radar, event cameras.
-* Tracking pipeline: detection → association → filtering → prediction.
-
-## 2.2 Challenges in Orbital Tracking
-
-* Sparse/noisy observations
-* High nonlinearity
-* Real/sim mismatch
-* Orbital perturbations
-* Multi-scenario variability
-
-## 2.3 Traditional Methods
-
-* SGP4, OD, EKF/UKF, batch estimation
-* Data association: Hungarian, JPDAF
-
 ## 2.4 Machine Learning for SSA
 
 * RNN/Transformers (limitations: require dense data)
@@ -38,13 +19,7 @@
 * Why it is suitable for orbital mechanics
 * Summary of the original paper and your adaptation
 
----
-
 # **3. Methodology — 4 pages**
-
-This is the heart of the report.
-
----
 
 ## **3.1 Dataset Design & Simulation Framework**
 
