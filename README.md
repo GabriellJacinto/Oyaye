@@ -168,7 +168,7 @@ python examples/train_npsnn_normalized.py \
 #### Step 4: Evaluate Trained Model
 ```bash
 # Test model performance (reproduces 6,877km RMSE result)
-python scripts/test_npsnn_simple.py
+python tests/test_npsnn_simple.py
 
 # Expected output should show:
 # Position RMSE: ~6,877 km across prediction horizons
