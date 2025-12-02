@@ -1,4 +1,4 @@
-# NP-SNN: Neural Physics-Informed Spiking Neural Networks for Space Debris Tracking
+# OYAYE: A Hybrid PINN–SNN Framework for Energy-Efficient Space Situational Awareness
 
 [![Python 3.8+](https://img.shields.io/badge/python-3.8+-blue.svg)](https://www.python.org/downloads/)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
@@ -43,23 +43,6 @@ This project implements a novel **NP-SNN (Neural Physics-Informed Spiking Neural
 - **Dynamic loss balancing** with learnable uncertainty weighting
 - **MLflow experiment tracking** with full reproducibility (configs, seeds, artifacts)
 - **Comprehensive benchmarking** against SGP4, EKF, UKF baselines
-
-## 🏗️ System Architecture
-
-```
-┌─────────────────┐    ┌──────────────────┐    ┌─────────────────┐
-│   Dataset       │    │   Time Encoding  │    │   SNN Core      │
-│   Generation    │───▶│   (Fourier/MLP)  │───▶│   (LIF Layers)  │
-│                 │    │                  │    │                 │
-└─────────────────┘    └──────────────────┘    └─────────────────┘
-         │                       │                       │
-         ▼                       ▼                       ▼
-┌─────────────────┐    ┌──────────────────┐    ┌─────────────────┐
-│   Physics       │    │   Decoder        │    │   Hybrid        │
-│   Propagation   │◀───│   (State + σ)    │───▶│   Filtering     │
-│                 │    │                  │    │                 │
-└─────────────────┘    └──────────────────┘    └─────────────────┘
-```
 
 ## 📦 Project Structure
 
@@ -116,50 +99,162 @@ conda activate npsnn-env
 
 # Install dependencies
 pip install -r requirements.txt
-
 ```
 
-### 2. Generate Synthetic Data
+## 🔬 Reproducing Experimental Results
 
+This section provides step-by-step instructions to reproduce the exact experimental results documented in our research report (see `docs/experimental_results.md`).
+
+### 📋 Prerequisites
+
+Ensure you have:
+- **NVIDIA GPU** with CUDA support (tested on GeForce MX550 2GB)
+- **Python 3.10+** with conda/mamba environment manager
+- **8GB+ RAM** for training (16GB+ recommended for full curriculum)
+- **5GB+ disk space** for datasets, models, and MLflow artifacts
+
+### 🎯 Reproducing Core Results (6,877km RMSE)
+
+#### Step 1: Environment Setup
 ```bash
-# Create synthetic orbital scenarios
-python -m src.data.generators --config configs/space_debris_simulation.yaml
-
-# Generate sensor observations  
-python -m src.data.sensors --scenario baseline_leo
+# Activate environment and configure Python paths
+conda activate npsnn-env
+export PYTHONPATH="${PYTHONPATH}:$(pwd)"
 ```
 
-### 3. Train NP-SNN Model
-
+#### Step 2: Generate Training Data with Exact Parameters
 ```bash
-# Stage 1: Supervised pretraining
-python -m src.train.train_loop --stage supervised --epochs 200
+# Create the exact dataset used in experiments
+python -c "
+import sys
+sys.path.append('.')
+from src.data.generators import ScenarioGenerator
+from src.data.trajectory_transforms import TrajectoryTransforms
 
-# Stage 2: Mixed physics training  
-python -m src.train.train_loop --stage mixed --epochs 300
+# Generate LEO scenarios with documented parameters
+config = {
+    'n_scenarios_train': 100,  # Debug mode (full: 1000+)
+    'n_scenarios_val': 20,    # Debug mode (full: 200+)
+    'altitude_range': [300e3, 800e3],  # 300-800 km LEO
+    'time_horizon_hours': 8,           # 8-hour prediction horizon
+    'dt_minutes': 5,                   # 5-minute time resolution
+    'observation_noise': 0.001,        # Standard noise level
+    'missing_data_rate': 0.2,          # 20% observation gaps
+    'seed': 42                         # Reproducibility seed
+}
 
-# Stage 3: Physics-dominant training
-python -m src.train.train_loop --stage physics --epochs 500
+generator = ScenarioGenerator(config)
+train_data, val_data = generator.generate_training_set()
+print('Dataset generation complete - matches experimental parameters')
+"
 ```
 
-### 4. Evaluate Performance
-
+#### Step 3: Train NP-SNN with Documented Configuration
 ```bash
-# Run comprehensive evaluation
-python -m src.eval.metrics --model-path checkpoints/best_model.pt
+# Train with exact experimental settings (reproduces 799,142 parameters)
+python examples/train_npsnn_normalized.py \
+    --config configs/npsnn_training.yaml \
+    --experiment-name "reproduction_run_$(date +%Y%m%d)" \
+    --debug \
+    --seed 42
 
-# Compare against baselines
-python -m src.eval.benchmarks --models npsnn sgp4 ekf ukf
+# This reproduces the documented training:
+# - 799,142 total parameters
+# - Normalized data pipeline (positions ÷ 1e7, velocities ÷ 1e4)  
+# - 5-stage curriculum learning
+# - Final validation loss: ~0.531
 ```
 
-### 5. View Results
-
+#### Step 4: Evaluate Trained Model
 ```bash
-# Start MLflow UI
-mlflow ui --backend-store-uri ./mlruns
+# Test model performance (reproduces 6,877km RMSE result)
+python scripts/test_npsnn_simple.py
 
-# Open browser to http://localhost:5000
+# Expected output should show:
+# Position RMSE: ~6,877 km across prediction horizons
+# Validation Loss: ~0.531 
+# Model Status: Stable, finite outputs
 ```
+
+#### Step 5: Generate Architecture Visualizations
+```bash
+# Create publication-quality architecture diagrams
+python scripts/generate_architecture_diagrams.py
+
+# Generates 4 PNG files in docs/:
+# - npsnn_architecture_overview.png (system architecture)
+# - snn_layer_details.png (LIF neuron dynamics)  
+# - training_flow_curriculum.png (curriculum learning)
+# - data_normalization_flow.png (data pipeline)
+```
+
+### 📊 Baseline Comparison Reproduction
+
+#### Run Classical Baselines
+```bash
+# Evaluate all baseline methods with documented parameters
+python scripts/evaluate_baselines.py \
+    --n-scenarios 15 \
+    --horizon-hours 8 \
+    --baselines SGP4 EKF_J2 UKF_J2 MLP
+
+# Expected baseline performance (literature estimates):
+# SGP4: ~100-200 km RMSE
+# EKF with J2: ~80-150 km RMSE  
+# UKF with J2: ~70-120 km RMSE
+# MLP Neural Net: ~200-500 km RMSE
+```
+
+### 🔍 Key Experimental Parameters
+
+The following parameters are critical for exact reproduction:
+
+#### Model Architecture (799,142 parameters)
+```python
+model_config = {
+    'time_encoding': {
+        'fourier_features': 64,
+        'model_dim': 256
+    },
+    'snn_core': {
+        'n_layers': 3,
+        'neurons_per_layer': 256, 
+        'neuron_type': 'LIF',
+        'threshold': 0.5,
+        'decay': 0.9,
+        'dropout': 0.1
+    },
+    'decoder': {
+        'ensemble_size': 5,
+        'hidden_dim': 128,
+        'output_dim': 6  # [x, y, z, vx, vy, vz]
+    }
+}
+```
+
+#### Training Configuration
+```python
+training_config = {
+    'optimizer': 'AdamW',
+    'learning_rate': 1e-3,
+    'weight_decay': 1e-5,
+    'batch_size': 4,          # GPU memory optimized
+    'max_epochs': 50,         # Debug mode (full: 200)
+    'curriculum_stages': 5,   # Sanity→Supervised→Mixed→Physics→Finetune
+    'scheduler': 'CosineAnnealingLR'
+}
+```
+
+#### Data Normalization (Critical for Stability)
+```python
+# ESSENTIAL: These transforms prevent training divergence
+normalization = {
+    'position_scale': 1e7,    # Reduces ~6.7e6m to ~0.67
+    'velocity_scale': 1e4,    # Reduces ~7.5e3m/s to ~0.75
+    'impact': '10^13x loss reduction (4.5e13 → 0.531)'
+}
+```
+
 
 ## 🧪 Example Usage
 
@@ -217,77 +312,6 @@ print(f"Total loss: {losses['total_loss']:.6f}")
 print(f"Dynamics residual: {losses['dynamics_loss']:.6f}")
 print(f"Energy conservation: {losses['conservation_loss']:.6f}")
 ```
-
-## 📊 Current Implementation Status
-
-### ✅ Completed Components
-- **Project structure and build system** - Complete modular architecture
-- **Configuration management** - YAML-based config with validation
-- **Orbital mechanics simulation** - Numerical propagation with J2 perturbations
-- **NP-SNN model architecture** - Time encoding, SNN core, probabilistic decoders
-- **Physics-informed loss functions** - Dynamics residual, conservation constraints
-- **Training pipeline** - Curriculum learning with MLflow tracking
-- **Evaluation metrics** - Comprehensive trajectory and physics validation
-- **Testing framework** - Unit tests with pytest
-
-### 🚧 In Progress
-- **Advanced force models** - Atmospheric drag (NRLMSISE-00), solar radiation pressure
-- **Multi-sensor fusion** - Optical + radar data integration
-- **Uncertainty quantification** - Calibration and propagation validation
-- **Domain randomization** - Robust training under sensor variations
-
-### 🔮 Future Work
-- **Real-time processing** - Optimization for operational deployment
-- **Hardware acceleration** - CUDA kernels and neuromorphic chip integration
-- **Multi-object scaling** - Demonstrated performance on 100+ objects
-- **Production API** - RESTful service with containerization
-
-## 🔬 Technical Details
-
-### Physics-Informed Training
-- **Automatic differentiation** for computing dr/dt and dv/dt from neural network outputs
-- **Collocation points** between observations for physics residual evaluation
-- **Conservation constraints** with soft penalty terms for energy and angular momentum
-- **Dynamic loss balancing** using learnable uncertainty parameters
-
-### Neuromorphic Integration
-- **Surrogate gradients** for SNN backpropagation (fast sigmoid, piecewise linear)
-- **Membrane potential normalization** for training stability
-- **Temporal dynamics** preserved through recurrent connections
-- **Event-driven processing** for future integration with neuromorphic cameras
-
-## 🧪 Testing & Validation
-
-Run the test suite:
-
-```bash
-# All tests
-pytest tests/ -v
-
-# Specific modules
-pytest tests/unit/test_propagators.py -v
-pytest tests/unit/test_time_encoding.py -v
-```
-
-## 📚 Documentation
-
-- **[Project Proposal](docs/project_proposal.md)**: Scientific motivation and overview
-- **Configuration Reference**: Complete parameter documentation in YAML files
-- **API Documentation**: Generated from comprehensive docstrings
-
-## 🤝 Contributing
-
-Contributions welcome! Please:
-
-1. **Fork the repository** and create a feature branch
-2. **Follow code style** (black, flake8, mypy)
-3. **Add tests** for new functionality  
-4. **Update documentation** including docstrings
-5. **Submit pull request** with detailed description
-
-## 📄 License
-
-This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
 
 ## 🏆 Citation
 
