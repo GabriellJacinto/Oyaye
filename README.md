@@ -101,7 +101,7 @@ pip install -r requirements.txt
 
 ## 🔬 Reproducing Experimental Results
 
-This section provides step-by-step instructions to reproduce the exact experimental results documented in our research report (see `doc/paper.pdf`).
+This section provides step-by-step instructions to reproduce the exact experimental results documented in our research report (see `paper.pdf`).
 
 ### 📋 Prerequisites
 
