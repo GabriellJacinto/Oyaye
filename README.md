@@ -117,8 +117,6 @@ conda activate npsnn-env
 # Install dependencies
 pip install -r requirements.txt
 
-# Run project setup
-python setup.py
 ```
 
 ### 2. Generate Synthetic Data

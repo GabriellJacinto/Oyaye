@@ -98,7 +98,7 @@ data/experiments/
 # Model files
 # models/
 checkpoints/
-*.pt
+# *.pt
 *.pth
 *.pkl
 *.joblib
@@ -142,4 +142,7 @@ temp/
 
 # Config overrides
 config_local.yaml
-config_override.yaml
+config_override.
+
+report/
+docs/
