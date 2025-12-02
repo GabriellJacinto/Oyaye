@@ -54,7 +54,6 @@ Oyaye/
 │   ├── data/
 │   │   ├── generators.py              # Scenario generation & sampling
 │   │   ├── sensors.py                 # Optical/radar/imaging simulation
-│   │   └── io.py                      # Dataset I/O utilities
 │   ├── models/
 │   │   ├── time_encoding.py           # Fourier/learned time features
 │   │   ├── snn_core.py                # LIF/RLIF neuron layers
@@ -76,9 +75,8 @@ Oyaye/
 ├── tests/
 │   └── unit/
 │       └── test_propagators.py        # Unit tests
-├── docs/
-│   ├── implementation_plan.md         # Detailed implementation roadmap
-│   └── project_proposal.md            # Project overview & motivation
+├── doc/
+│   └── paper.pdf            # Project overview, motivation and results
 ├── requirements.txt                   # Python dependencies
 ├── setup.py                          # Project setup script
 └── README.md                         # This file
@@ -103,7 +101,7 @@ pip install -r requirements.txt
 
 ## 🔬 Reproducing Experimental Results
 
-This section provides step-by-step instructions to reproduce the exact experimental results documented in our research report (see `docs/paper.pdf`).
+This section provides step-by-step instructions to reproduce the exact experimental results documented in our research report (see `doc/paper.pdf`).
 
 ### 📋 Prerequisites
 
@@ -179,7 +177,7 @@ python tests/test_npsnn_simple.py
 #### Step 5: Generate Architecture Visualizations
 ```bash
 # Create publication-quality architecture diagrams
-python scripts/generate_architecture_diagrams.py
+python src/visualization/generate_architecture_diagrams.py
 
 # Generates 4 PNG files in docs/:
 # - npsnn_architecture_overview.png (system architecture)
